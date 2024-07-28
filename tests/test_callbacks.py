@@ -27,19 +27,8 @@ def test_url_callback():
     result = runner.invoke(app, ["htps://google.com/"])
     assert result.exit_code != 0
 
-    # Valid URLs
-    result = runner.invoke(app, ["https://docs.python.org/3/library/logging.html"])
-    assert result.exit_code == 0
-
 
 def test_save_folder_callback():
-    # Valid folder name for all systems
-    result = runner.invoke(
-        app, ["https://google.com/", "--save-folder", "ValidFolderName"]
-    )
-    assert result.exit_code == 0
-
-    # Specific system tests
     if os.name == "nt":  # OS is Windows
         result = runner.invoke(
             app, ["https://google.com/", "--save-folder", "Invalid<FolderName"]

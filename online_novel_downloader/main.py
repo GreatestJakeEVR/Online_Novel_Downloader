@@ -5,18 +5,13 @@ import json
 
 from pathlib import Path
 from typing import Optional
-from .callbacks import (
-    version_callback,
-    url_callback,
-    save_folder_callback,
-    website_callback,
-)
 
 import typer
 import requests
 from bs4 import BeautifulSoup
 from typing_extensions import Annotated
 from rich import print
+from rich.progress import track
 
 
 __version__ = "0.1.0"
@@ -121,7 +116,9 @@ def save_folder_callback(name: str):
 
 def website_callback(website: str):
     """
-    Checks to make sure that the website is valid.
+    Checks to make sure that the website is supported by this program.
+    Supported websites:
+    - lightnovelcave
 
     Parameters
     ----------
@@ -166,6 +163,8 @@ def get_lightnovelcave_info(soup: BeautifulSoup) -> dict[str, list]:
 def get_next_url(website: str, soup: BeautifulSoup) -> str:
     """
     Gets the URL for the next chapter of the novel.
+    Currently supports these websites:
+    - lightnovelcave
 
     Parameters
     ----------
@@ -180,8 +179,16 @@ def get_next_url(website: str, soup: BeautifulSoup) -> str:
         The URL for the next chapter of the novel.
     """
     if website == "lightnovelcave":
-        next_chapter_url = "https://lightnovelcave.com" + soup.find(class_="button nextchap")["href"]  # type: ignore
-
+        if soup.find(class_="button nextchap isDisabled") is not None:
+            logger.info(
+                "End of novel reached before reaching total_chapters downloaded. Exiting."
+            )
+            raise ValueError("End of novel reached. Exiting.")
+        else:
+            next_chapter_url = "https://lightnovelcave.com" + soup.find(class_="button nextchap")["href"]  # type: ignore
+    else:
+        raise ValueError(f"{website} is not a website supported by this program.")
+    logging.info(f"Next URL acquired: {next_chapter_url}")
     return next_chapter_url
 
 
@@ -257,7 +264,7 @@ def download(
 
     # Accessing the provided starting URL.
     print("Beginning chapter downloads.")
-    logging.info(f"Requesting starting URL: {start_url}")
+    logging.info(f"Requesting chapter 1 out of {total_chapters}: {start_url}")
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
@@ -294,26 +301,29 @@ def download(
     )
     logging.info(f"Writing chapter {current_chapter} to file: {working_file}")
 
+    indent = "    "
     with open(working_file, "w") as file:
-        indent = "    "
         for para in results_dict["chapter_content"]:
             indented_paragraph = f"{indent}{para}\n\n"
             file.write(indented_paragraph)
 
     # Looping through the rest of the chapters
-    for i in range(1, total_chapters):
+    for i in track(range(1, total_chapters), description="Downloading Chapters"):
         # Getting the next chapter URL
-        get_next_url("lightnovelcave", soup)
-        current_url = soup.find(class_="button nextchap")["href"]  # type: ignore pylance mistake
-        logging.info(f"Requesting next chapter URL: {next_chapter_url}")
+        tmp_url = get_next_url(website, soup)
 
-        r = requests.get(next_chapter_url, headers=headers)
+        logging.info(f"Requesting chapter URL {i} out of {total_chapters}: {tmp_url}")
+
+        r = requests.get(tmp_url, headers=headers)
 
         status_code = r.status_code
+        logging.info(f"Status Code from request: {r.status_code}")
         if status_code != 200:
-            logging.info(f"Status Code from request: {r.status_code}")
             print("There was an error accessing a the url {current_url}. Exiting.")
             return
+
+        # Creating the soup object from the request
+        soup = BeautifulSoup(r.text, "html.parser")
 
         # Getting data from the page
         results_dict = get_lightnovelcave_info(soup)
@@ -329,7 +339,10 @@ def download(
         logging.info(f"Writing chapter {current_chapter} to file: {working_file}")
 
         with open(working_file, "w") as file:
-            indent = "    "
             for para in results_dict["chapter_content"]:
                 indented_paragraph = f"{indent}{para}\n\n"
                 file.write(indented_paragraph)
+
+    logger.info("Finished downloading all chapters. Exited successfully")
+    print("Finished downloading all chapters.")
+    return

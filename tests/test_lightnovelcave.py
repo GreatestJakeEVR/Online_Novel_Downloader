@@ -17,3 +17,4 @@ def test_lightnovelcave():
             "3",
         ],
     )
+    assert result.exit_code == 0
