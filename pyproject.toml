@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "online-novel-downloader"
+version = "0.1.0"
+description = "Helps with downloading web novels from popular websites."
+authors = ["GreatestJakeEVR"]
+license = "MIT License"
+readme = "README.md"
+
+[tool.poetry.scripts]
+online-novel-downloader = "online_novel_downloader.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+typer = "^0.12.3"
+beautifulsoup4 = "^4.12.3"
+requests = "^2.32.3"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
