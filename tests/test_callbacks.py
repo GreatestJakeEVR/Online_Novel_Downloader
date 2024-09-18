@@ -43,3 +43,8 @@ def test_save_folder_callback():
             app, ["https://google.com/", "--save-folder", "Invalid/FolderName"]
         )
         assert result.exit_code != 0
+
+
+def test_website_callback():
+    result = runner.invoke(app, ["https://google.com/", "--website", "not_a_website"])
+    assert result.exit_code != 0

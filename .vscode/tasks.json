@@ -1,0 +1,20 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Generate Readme info",
+      "type": "shell",
+      "command": "typer online_novel_downloader.main utils docs --output readme_add.md --name online-novel-downloader",
+      "windows": {
+        "command": "typer online_novel_downloader.main utils docs --output readme_add.md --name online-novel-downloader"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}

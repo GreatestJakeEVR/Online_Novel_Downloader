@@ -11,12 +11,13 @@ online-novel-downloader = "online_novel_downloader.main:app"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-typer = "^0.12.3"
+typer = {extras = ["all"], version = "^0.12.3"}
 beautifulsoup4 = "^4.12.3"
 requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
+requests-mock
 
 [build-system]
 requires = ["poetry-core"]
