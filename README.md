@@ -24,7 +24,7 @@ online-novel-downloader
 ```
 
 IMPORTANT: pay attention since the first example uses the importable version of the package
-name (with "_" as seprators) while the second uses the command line tool name (with "-" as
+name (with "_" as seperators) while the second uses the command line tool name (with "-" as
 seperators).
 
 **Usage**:

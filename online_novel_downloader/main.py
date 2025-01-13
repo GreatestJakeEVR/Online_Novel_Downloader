@@ -125,7 +125,7 @@ def website_callback(website: str):
     website : str
         The website to download the novel from. Currently only lightnovelcave is supported.
     """
-    if website == "lightnovelcave":
+    if website == ("lightnovelcave" or "royalroad"):
         return website
     else:
         raise typer.BadParameter(f"{website} is not a valid website.")
@@ -160,6 +160,34 @@ def get_lightnovelcave_info(soup: BeautifulSoup) -> dict[str, list]:
     return results_dict
 
 
+def get_royalroad_info(soup: BeautifulSoup) -> dict[str, list]:
+    """
+    Gets the chapter number and content from the page of a lightnovelcave novel.
+
+    Parameters
+    ----------
+    r : requests.Response
+        A requests.Response object from targeting a lightnovelcave url.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the current chapter number and the chapter content.
+        has form: {current_chapter: str, chapter_content: list}
+    """
+    results_dict = {}
+
+    current_chapter = soup.head.title.text  # type: ignore
+    results_dict["current_chapter"] = current_chapter
+
+    chapter_content = soup.find("div", class_="chapter-inner chapter-content")
+    chapter_content = chapter_content.find_all("p")  # type: ignore
+    chapter_content = [x.string for x in chapter_content]
+    results_dict["chapter_content"] = chapter_content
+
+    return results_dict
+
+
 def get_next_url(website: str, soup: BeautifulSoup) -> str:
     """
     Gets the URL for the next chapter of the novel.
@@ -186,8 +214,20 @@ def get_next_url(website: str, soup: BeautifulSoup) -> str:
             raise ValueError("End of novel reached. Exiting.")
         else:
             next_chapter_url = "https://lightnovelcave.com" + soup.find(class_="button nextchap")["href"]  # type: ignore
-    else:
-        raise ValueError(f"{website} is not a website supported by this program.")
+    elif website == "royalroad":
+        if (
+            soup.find("button", class_="btn btn-primary col-xs-12", disabled="disabled")
+            is not None
+        ):
+            logger.info(
+                "End of novel reached before reaching total_chapters downloaded. Exiting."
+            )
+            raise ValueError("End of novel reached. Exiting.")
+        else:
+            next_chapter_url = "https://royalroad.com" + str(
+                soup.find("a", class_="btn btn-primary col-xs-12")["href"]  # type: ignore
+            )
+
     logging.info(f"Next URL acquired: {next_chapter_url}")
     return next_chapter_url
 
@@ -281,8 +321,10 @@ def download(
     soup = BeautifulSoup(r.text, "html.parser")
 
     # Extracting data from the soup.
-    # Right now only works on lightnovelcave. Later this will be customizable.
-    results_dict = get_lightnovelcave_info(soup)
+    if website == "lightnovelcave":
+        results_dict = get_lightnovelcave_info(soup)
+    if website == "royalroad":
+        results_dict = get_royalroad_info(soup)
 
     # Checking for existing save folder. Will create it if it doesn't exist.
     current_chapter = results_dict["current_chapter"]
@@ -326,7 +368,10 @@ def download(
         soup = BeautifulSoup(r.text, "html.parser")
 
         # Getting data from the page
-        results_dict = get_lightnovelcave_info(soup)
+        if website == "lightnovelcave":
+            results_dict = get_lightnovelcave_info(soup)
+        if website == "royalroad":
+            results_dict = get_royalroad_info(soup)
 
         # Writing the chapter to a file
         working_file = os.path.normpath(
